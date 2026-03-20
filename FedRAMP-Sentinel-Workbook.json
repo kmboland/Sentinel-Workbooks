@@ -1,0 +1,1230 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [],
+        "parameters": [
+          {
+            "id": "tr-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time Range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 2592000000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "sev-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "MinSeverity",
+            "label": "🔴 Min Severity",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": false,
+            "value": "Informational",
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\"High\",\"Medium\",\"Low\",\"Informational\"]"
+          }
+        ]
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "\n<div style=\"background: linear-gradient(135deg,#003087 0%,#0078d4 100%); padding:28px 32px; border-radius:10px; color:#fff;\">\n<h1 style=\"margin:0;font-size:1.8em;letter-spacing:0.04em;\">🛡️ FedRAMP Compliance & Continuous Monitoring Workbook</h1>\n<p style=\"margin:8px 0 4px;font-size:1em;opacity:0.9;\">Microsoft Sentinel · NIST SP 800-53 Rev 5 · FedRAMP High / Moderate Baseline</p>\n<hr style=\"border:1px solid rgba(255,255,255,0.3);margin:12px 0;\"/>\n<p style=\"margin:0;font-size:0.85em;opacity:0.75;\">\n  Use this workbook to demonstrate continuous monitoring artifacts for FedRAMP authorization packages, annual assessments, and 3PAO audits. \n  Each section maps directly to a NIST 800-53 control family and provides exportable evidence tables.\n</p>\n</div>\n\n---\n\n### 📋 Sections in This Workbook\n\n| # | Section | NIST 800-53 Control Family | FedRAMP Impact |\n|---|---------|---------------------------|----------------|\n| 1 | Executive Dashboard | All families | Evidence summary |\n| 2 | Audit & Accountability | AU | AU-2, AU-3, AU-6, AU-9, AU-12 |\n| 3 | Access Control | AC | AC-2, AC-3, AC-6, AC-17 |\n| 4 | Identification & Authentication | IA | IA-2, IA-5, IA-8 |\n| 5 | Incident Response | IR | IR-4, IR-5, IR-6, IR-8 |\n| 6 | Configuration Management | CM | CM-2, CM-3, CM-6, CM-8 |\n| 7 | System & Information Integrity | SI | SI-3, SI-4, SI-7 |\n| 8 | System & Communications Protection | SC | SC-5, SC-7, SC-28 |\n| 9 | Continuous Improvement Metrics | CA | CA-2, CA-7 |\n| 10 | Proof of Artifacts — Auditor Export | All | Evidence package |\n\n> **💡 Usage Tips:** Expand each section below. Use the **Time Range** selector to scope evidence to your assessment period (e.g., last 90 days for annual review, last 30 days for monthly ConMon). Use the **Export to Excel** icon on any table to download evidence artifacts for your audit package.\n\n---\n"
+      },
+      "name": "cover"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "1️⃣  Executive Dashboard — Leadership & ConMon Summary",
+        "expandable": true,
+        "expanded": true,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 📊 Executive Dashboard\n> Provides a high-level compliance posture snapshot for leadership briefings, ATO packages, and monthly ConMon reports.\n> **Control mapping:** AU-6 (Audit Review), IR-5 (Incident Monitoring), CA-7 (Continuous Monitoring)\n"
+            },
+            "name": "exec-header"
+          },
+          {
+            "type": 3,
+            "name": "exec-kpi-total",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize\n    Total = count(),\n    High = countif(Severity == \"High\"),\n    Medium = countif(Severity == \"Medium\"),\n    Low = countif(Severity == \"Low\"),\n    Informational = countif(Severity == \"Informational\")\n| extend Label = \"Incidents\"\n",
+              "size": 4,
+              "title": "Total Incidents — Selected Period",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "showPin": true,
+              "exportToExcelOptions": "liveData",
+              "tileSettings": {
+                "showBorder": false,
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Total",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": 3,
+            "name": "exec-kpi-status",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize Count = count() by Status\n",
+              "size": 3,
+              "title": "Incident Status Breakdown",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "exec-sev-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize Count = count() by bin(TimeGenerated, 1d), Severity\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "Incident Trend by Severity Over Time",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "exec-tactic",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| where isnotempty(Tactics)\n| mv-expand todynamic(Tactics)\n| extend Tactic = tostring(Tactics)\n| summarize AlertCount = count() by Tactic\n| sort by AlertCount desc\n",
+              "size": 1,
+              "title": "Alerts by MITRE ATT&CK Tactic",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "exec-top-rules",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| summarize AlertCount = count(), LastFired = max(TimeGenerated) by AlertName, Severity\n| sort by AlertCount desc\n| take 20\n",
+              "size": 0,
+              "title": "Top Firing Analytics Rules — Evidence of Detection Coverage",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Severity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "High",
+                          "representation": "3",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Medium",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Low",
+                          "representation": "1",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Sev4",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "AlertCount",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": 3,
+            "name": "exec-datasources",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union withsource=TableName *\n| where TimeGenerated {TimeRange}\n| summarize RowCount = count(), LastEvent = max(TimeGenerated) by TableName\n| where RowCount > 0\n| sort by RowCount desc\n| project TableName, ['Events Ingested'] = RowCount, ['Last Event'] = LastEvent, Status = iff(LastEvent > ago(24h), \"✅ Active\", \"⚠️ Stale\")\n",
+              "size": 0,
+              "title": "Active Data Sources — Log Coverage Health",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-1️⃣__executive_dashb"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "2️⃣  AU — Audit & Accountability",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 📁 AU — Audit & Accountability\n> **Controls:** AU-2 (Event Logging), AU-3 (Content of Audit Records), AU-6 (Audit Review), AU-9 (Protection of Audit Info), AU-11 (Retention), AU-12 (Audit Generation)\n\nThis section demonstrates that audit events are being collected, retained, reviewed, and protected — core requirements for FedRAMP authorization.\n"
+            },
+            "name": "au-header"
+          },
+          {
+            "type": 3,
+            "name": "au-log-sources",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union withsource=TableName *\n| where TimeGenerated {TimeRange}\n| summarize EventCount = count(), EarliestEvent = min(TimeGenerated), LatestEvent = max(TimeGenerated) by TableName\n| extend DaysCovered = datetime_diff('day', LatestEvent, EarliestEvent)\n| extend AuditCategory = case(\n    TableName has_any (\"SigninLogs\",\"AuditLogs\"), \"Identity & Access\",\n    TableName has_any (\"SecurityEvent\",\"SecurityAlert\",\"SecurityIncident\"), \"Security Operations\",\n    TableName has_any (\"AzureActivity\"), \"Azure Control Plane\",\n    TableName has_any (\"CommonSecurityLog\",\"Syslog\"), \"Network & Endpoint\",\n    TableName has_any (\"OfficeActivity\"), \"Microsoft 365\",\n    TableName has_any (\"DeviceEvents\",\"DeviceLogonEvents\",\"DeviceNetworkEvents\"), \"Defender for Endpoint\",\n    \"Other\")\n| sort by EventCount desc\n| project ['Table Name'] = TableName, ['Audit Category'] = AuditCategory, ['Events in Period'] = EventCount, ['Earliest Record'] = EarliestEvent, ['Latest Record'] = LatestEvent, ['Days Covered'] = DaysCovered\n",
+              "size": 0,
+              "title": "AU-2 / AU-12 — Audit Event Sources Active in Environment",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "au-event-volume",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union withsource=TableName *\n| where TimeGenerated {TimeRange}\n| where TableName in (\"SigninLogs\",\"AuditLogs\",\"SecurityEvent\",\"AzureActivity\",\"CommonSecurityLog\",\"OfficeActivity\",\"SecurityAlert\",\"SecurityIncident\")\n| summarize EventCount = count() by bin(TimeGenerated, 1d), TableName\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "AU-12 — Audit Record Generation Volume by Day",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "au-critical-events",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| extend EventCategory = case(\n    EventID in (4624,4625,4648), \"Logon / Logoff\",\n    EventID in (4720,4722,4724,4726,4728,4732,4756), \"Account Management\",\n    EventID in (4688,4689), \"Process Execution\",\n    EventID in (4663,4660), \"Object Access\",\n    EventID in (4697,7045), \"Service Changes\",\n    EventID in (4698,4699,4700,4702), \"Scheduled Task\",\n    EventID in (4648,4768,4769,4771,4776), \"Authentication\",\n    EventID in (1102,4719), \"Audit Policy Change\",\n    \"Other\")\n| summarize EventCount = count() by EventCategory, EventID\n| sort by EventCount desc\n",
+              "size": 0,
+              "title": "AU-2 — Critical Audit Event Categories Captured",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "au-retention",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union withsource=TableName *\n| where TimeGenerated > ago(90d)\n| where TableName in (\"SigninLogs\",\"AuditLogs\",\"SecurityEvent\",\"AzureActivity\",\"SecurityAlert\")\n| summarize EarliestRecord = min(TimeGenerated), LatestRecord = max(TimeGenerated), TotalEvents = count() by TableName\n| extend RetentionDays = datetime_diff('day', LatestRecord, EarliestRecord)\n| extend RetentionStatus = iff(RetentionDays >= 90, \"✅ Meets 90-day minimum\", \"⚠️ Below 90 days — review retention policy\")\n| project ['Table'] = TableName, ['Earliest Record'] = EarliestRecord, ['Latest Record'] = LatestRecord, ['Retention Days'] = RetentionDays, ['Days of Events'] = TotalEvents, ['FedRAMP AU-11 Status'] = RetentionStatus\n",
+              "size": 0,
+              "title": "AU-11 — Audit Log Retention Evidence (90-Day Lookback)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "au-azure-activity",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where ActivityStatusValue != \"Success\" or OperationNameValue has_any (\"delete\",\"write\",\"action\")\n| summarize EventCount = count() by OperationNameValue, ActivityStatusValue, Caller, ResourceProviderValue\n| sort by EventCount desc\n| take 50\n| project ['Operation'] = OperationNameValue, ['Status'] = ActivityStatusValue, ['Caller'] = Caller, ['Resource Provider'] = ResourceProviderValue, ['Count'] = EventCount\n",
+              "size": 0,
+              "title": "AU-3 — Azure Control Plane Audit Records (AzureActivity)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-2️⃣__au_—_audit_&_ac"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "3️⃣  AC — Access Control",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 🔐 AC — Access Control\n> **Controls:** AC-2 (Account Management), AC-3 (Access Enforcement), AC-6 (Least Privilege), AC-7 (Unsuccessful Logon Attempts), AC-17 (Remote Access)\n\nDemonstrates enforcement of access policies, privileged account monitoring, and detection of unauthorized access attempts.\n"
+            },
+            "name": "ac-header"
+          },
+          {
+            "type": 3,
+            "name": "ac-failed-logins",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\"\n| extend FailureReason = ResultDescription\n| summarize FailureCount = count(), DistinctIPs = dcount(IPAddress), LastAttempt = max(TimeGenerated) by UserPrincipalName, FailureReason\n| where FailureCount > 5\n| sort by FailureCount desc\n| project ['User'] = UserPrincipalName, ['Failure Count'] = FailureCount, ['Distinct IPs'] = DistinctIPs, ['Failure Reason'] = FailureReason, ['Last Attempt'] = LastAttempt\n",
+              "size": 0,
+              "title": "AC-7 — Failed Authentication Attempts (Brute Force Indicator)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ac-privileged",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| where Category == \"RoleManagement\" or OperationName has_any (\"Add member to role\",\"Remove member from role\",\"Assign role\")\n| extend Actor = tostring(InitiatedBy.user.userPrincipalName)\n| extend TargetUser = tostring(TargetResources[0].userPrincipalName)\n| extend RoleName = tostring(TargetResources[0].displayName)\n| summarize EventCount = count() by OperationName, Actor, TargetUser, RoleName, Result\n| sort by EventCount desc\n| project ['Operation'] = OperationName, ['Performed By'] = Actor, ['Target User'] = TargetUser, ['Role'] = RoleName, ['Result'] = Result, ['Count'] = EventCount\n",
+              "size": 0,
+              "title": "AC-6 — Privileged Account Activity (Least Privilege Monitoring)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ac-account-mgmt",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| where Category == \"UserManagement\"\n| extend Actor = tostring(InitiatedBy.user.userPrincipalName)\n| extend TargetUser = tostring(TargetResources[0].userPrincipalName)\n| project TimeGenerated, OperationName, Actor, TargetUser, Result\n| sort by TimeGenerated desc\n",
+              "size": 0,
+              "title": "AC-2 — Account Lifecycle Management Events",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ac-conditional-access",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| mv-expand ConditionalAccessPolicies\n| extend PolicyName = tostring(ConditionalAccessPolicies.displayName)\n| extend PolicyResult = tostring(ConditionalAccessPolicies.result)\n| where PolicyResult in (\"failure\",\"notApplied\")\n| summarize Failures = count() by PolicyName, PolicyResult, UserPrincipalName\n| sort by Failures desc\n| project ['CA Policy'] = PolicyName, ['Result'] = PolicyResult, ['User'] = UserPrincipalName, ['Failure Count'] = Failures\n",
+              "size": 0,
+              "title": "AC-3 — Conditional Access Policy Enforcement",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ac-guest-access",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where UserType == \"Guest\" or UserPrincipalName has \"#EXT#\"\n| summarize SigninCount = count(), DistinctApps = dcount(AppDisplayName), LastSeen = max(TimeGenerated) by UserPrincipalName, IPAddress\n| sort by SigninCount desc\n| project ['Guest / External User'] = UserPrincipalName, ['Sign-ins'] = SigninCount, ['Apps Accessed'] = DistinctApps, ['Source IP'] = IPAddress, ['Last Seen'] = LastSeen\n",
+              "size": 0,
+              "title": "AC-2 / AC-17 — Guest & External User Activity",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ac-mfa-usage",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| extend MFAStatus = case(\n    AuthenticationRequirement == \"multiFactorAuthentication\" and ResultType == \"0\", \"✅ MFA Success\",\n    AuthenticationRequirement == \"multiFactorAuthentication\" and ResultType != \"0\", \"❌ MFA Failed\",\n    AuthenticationRequirement == \"singleFactorAuthentication\", \"⚠️ Single Factor Only\",\n    \"Unknown\")\n| summarize Count = count() by MFAStatus\n",
+              "size": 3,
+              "title": "AC-3 / IA-2 — MFA Enforcement by Sign-in (Pie)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-3️⃣__ac_—_access_con"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "4️⃣  IA — Identification & Authentication",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 🪪 IA — Identification & Authentication\n> **Controls:** IA-2 (Identification & Authentication — Organizational Users), IA-5 (Authenticator Management), IA-8 (Non-Organizational Users)\n\nEvidence that strong authentication is enforced for all users and that authenticator events are logged and monitored.\n"
+            },
+            "name": "ia-header"
+          },
+          {
+            "type": 3,
+            "name": "ia-mfa-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| summarize\n    MFASuccess = countif(AuthenticationRequirement == \"multiFactorAuthentication\" and ResultType == \"0\"),\n    SingleFactor = countif(AuthenticationRequirement == \"singleFactorAuthentication\")\n  by bin(TimeGenerated, 1d)\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "IA-2 — MFA Usage Trend Over Time",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ia-spray",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let threshold = 10;\nSigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType == \"50126\" or ResultType == \"50053\"\n| summarize AttemptCount = count(), DistinctUsers = dcount(UserPrincipalName), DistinctIPs = dcount(IPAddress) by bin(TimeGenerated, 1h)\n| where AttemptCount >= threshold\n| project ['Hour'] = TimeGenerated, ['Failed Attempts'] = AttemptCount, ['Users Targeted'] = DistinctUsers, ['Source IPs'] = DistinctIPs, RiskLevel = iff(AttemptCount > 50, \"🔴 High\", \"🟡 Medium\")\n",
+              "size": 0,
+              "title": "IA-5 — Password Spray / Brute Force Detection",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ia-service-principals",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AADServicePrincipalSignInLogs\n| where TimeGenerated {TimeRange}\n| summarize SignInCount = count(), FailCount = countif(ResultType != \"0\"), LastSeen = max(TimeGenerated) by ServicePrincipalName, AppId\n| sort by FailCount desc\n| project ['Service Principal'] = ServicePrincipalName, ['App ID'] = AppId, ['Total Sign-ins'] = SignInCount, ['Failures'] = FailCount, ['Last Seen'] = LastSeen\n",
+              "size": 0,
+              "title": "IA-8 — Service Principal & App Authentication Activity",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ia-lockouts",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| where EventID == 4740\n| extend LockedAccount = TargetUserName\n| extend LockedBy = SubjectUserName\n| summarize LockoutCount = count(), LastLockout = max(TimeGenerated) by LockedAccount, LockedBy\n| sort by LockoutCount desc\n| project ['Locked Account'] = LockedAccount, ['Locked By'] = LockedBy, ['Lockout Count'] = LockoutCount, ['Most Recent Lockout'] = LastLockout\n",
+              "size": 0,
+              "title": "IA-5 — Account Lockout Events",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-4️⃣__ia_—_identifica"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "5️⃣  IR — Incident Response",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 🚨 IR — Incident Response\n> **Controls:** IR-4 (Incident Handling), IR-5 (Incident Monitoring), IR-6 (Incident Reporting), IR-8 (Incident Response Plan)\n\nProvides evidence of incident detection, classification, assignment, response times, and resolution — all required artifacts for FedRAMP continuous monitoring.\n"
+            },
+            "name": "ir-header"
+          },
+          {
+            "type": 3,
+            "name": "ir-mttd-mttr",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| where Status == \"Closed\"\n| extend MTTD_Hours = datetime_diff('hour', FirstActivityTime, TimeGenerated)\n| extend MTTR_Hours = datetime_diff('hour', ClosedTime, FirstActivityTime)\n| summarize\n    ['Incidents Closed'] = count(),\n    ['Avg MTTD (hours)'] = round(avg(MTTD_Hours), 1),\n    ['Avg MTTR (hours)'] = round(avg(MTTR_Hours), 1),\n    ['Max MTTR (hours)'] = round(max(MTTR_Hours), 1),\n    ['Min MTTR (hours)'] = round(min(MTTR_Hours), 1)\n",
+              "size": 4,
+              "title": "IR-5 — MTTD & MTTR Summary (Mean Time to Detect / Respond)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ir-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize Count = count() by bin(TimeGenerated, 1d), Severity\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "IR-5 — Incident Volume Trend by Severity",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ir-status",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| project\n    ['Incident #'] = IncidentNumber,\n    ['Title'] = Title,\n    ['Severity'] = Severity,\n    ['Status'] = Status,\n    ['Classification'] = Classification,\n    ['Owner'] = Owner,\n    ['Created'] = TimeGenerated,\n    ['Last Updated'] = LastModifiedTime,\n    ['Tactics'] = AdditionalData\n| sort by ['Created'] desc\n",
+              "size": 0,
+              "title": "IR-4 — Incident Handling Status (All Incidents)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ir-owner",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| extend OwnerName = tostring(Owner.assignedTo)\n| summarize Total = count(), Open = countif(Status == \"New\" or Status == \"Active\"), Closed = countif(Status == \"Closed\") by OwnerName\n| where isnotempty(OwnerName)\n| sort by Total desc\n",
+              "size": 0,
+              "title": "IR-4 — Incidents by Owner / Responder",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ir-playbooks",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where ResourceProviderValue == \"Microsoft.Logic\"\n| where OperationNameValue has \"workflows\" and ActivityStatusValue == \"Succeeded\"\n| summarize Executions = count(), LastRun = max(TimeGenerated) by Resource, Caller\n| sort by Executions desc\n| project ['Playbook (Logic App)'] = Resource, ['Triggered By'] = Caller, ['Executions'] = Executions, ['Last Run'] = LastRun\n",
+              "size": 0,
+              "title": "IR-4 — Automated Response (Playbook Executions via Azure Activity)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ir-classification",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| where Status == \"Closed\"\n| summarize Count = count() by Classification, ClassificationReason\n| sort by Count desc\n| project ['Classification'] = Classification, ['Reason'] = ClassificationReason, ['Count'] = Count\n",
+              "size": 1,
+              "title": "IR-6 — Incident Classification & Closure Reason",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-5️⃣__ir_—_incident_r"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "6️⃣  CM — Configuration Management",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## ⚙️ CM — Configuration Management\n> **Controls:** CM-2 (Baseline Configuration), CM-3 (Configuration Change Control), CM-6 (Configuration Settings), CM-8 (Information System Component Inventory)\n\nEvidence of change tracking, configuration baseline deviations, and inventory of system components.\n"
+            },
+            "name": "cm-header"
+          },
+          {
+            "type": 3,
+            "name": "cm-changes",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where OperationNameValue has_any (\"write\",\"delete\",\"action\")\n| where ActivityStatusValue == \"Succeeded\"\n| extend ChangeType = case(\n    OperationNameValue has \"delete\", \"🔴 Delete\",\n    OperationNameValue has \"write\", \"🟡 Write / Update\",\n    \"🔵 Action\")\n| summarize Changes = count(), LastChange = max(TimeGenerated) by ResourceGroup, Resource, OperationNameValue, Caller, ChangeType\n| sort by Changes desc\n| take 50\n| project ['Change Type'] = ChangeType, ['Resource'] = Resource, ['Resource Group'] = ResourceGroup, ['Operation'] = OperationNameValue, ['Changed By'] = Caller, ['Count'] = Changes, ['Last Change'] = LastChange\n",
+              "size": 0,
+              "title": "CM-3 — Azure Resource Configuration Changes",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "cm-policy",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where ResourceProviderValue == \"Microsoft.PolicyInsights\"\n| summarize Events = count() by OperationNameValue, ActivityStatusValue\n| sort by Events desc\n| project ['Policy Operation'] = OperationNameValue, ['Result'] = ActivityStatusValue, ['Count'] = Events\n",
+              "size": 0,
+              "title": "CM-6 — Azure Policy Compliance State",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "cm-new-resources",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where OperationNameValue endswith \"write\" and ActivityStatusValue == \"Succeeded\"\n| where isnotempty(Resource)\n| summarize FirstSeen = min(TimeGenerated), Count = count() by Resource, ResourceGroup, Caller, ResourceProviderValue\n| sort by FirstSeen desc\n| take 50\n| project ['Resource'] = Resource, ['Type'] = ResourceProviderValue, ['Resource Group'] = ResourceGroup, ['Deployed By'] = Caller, ['First Seen'] = FirstSeen\n",
+              "size": 0,
+              "title": "CM-8 — New Resources Deployed (Inventory Change)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-6️⃣__cm_—_configurat"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "7️⃣  SI — System & Information Integrity",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 🔬 SI — System & Information Integrity\n> **Controls:** SI-3 (Malware Protection), SI-4 (Information System Monitoring), SI-7 (Software & Firmware Integrity)\n\nDemonstrates threat detection coverage, malware monitoring, security recommendations, and threat intelligence matching.\n"
+            },
+            "name": "si-header"
+          },
+          {
+            "type": 3,
+            "name": "si-threat-intel",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "ThreatIntelligenceIndicator\n| where TimeGenerated {TimeRange}\n| where Active == true\n| summarize Indicators = count() by ThreatType, IndicatorId\n| summarize TotalIndicators = count(), Threat_Types = make_set(ThreatType) by ThreatType\n| sort by TotalIndicators desc\n| project ['Threat Type'] = ThreatType, ['Indicator Count'] = TotalIndicators\n",
+              "size": 0,
+              "title": "SI-4 — Threat Intelligence Indicator Matches",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "si-sec-recs",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityRecommendation\n| where TimeGenerated {TimeRange}\n| where RecommendationState == \"Unhealthy\"\n| summarize Count = count() by RecommendationName, RecommendationSeverity, RemediationDescription\n| sort by Count desc\n| project ['Recommendation'] = RecommendationName, ['Severity'] = RecommendationSeverity, ['Open Count'] = Count, ['Remediation'] = RemediationDescription\n",
+              "size": 0,
+              "title": "SI-4 — Defender for Cloud Security Recommendations",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "si-malware",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| where AlertType has_any (\"Malware\",\"Virus\",\"Trojan\",\"Ransomware\",\"Exploit\",\"Backdoor\",\"Spyware\")\n    or ProductName has \"Defender\"\n| summarize Count = count(), LastSeen = max(TimeGenerated) by AlertName, AlertSeverity, ProductName, CompromisedEntity\n| sort by Count desc\n| project ['Alert'] = AlertName, ['Severity'] = AlertSeverity, ['Product'] = ProductName, ['Affected Entity'] = CompromisedEntity, ['Count'] = Count, ['Last Seen'] = LastSeen\n",
+              "size": 0,
+              "title": "SI-3 — Malware & Endpoint Threat Detections",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "si-process",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| where EventID == 4688\n| where Process has_any (\"powershell\",\"cmd\",\"wscript\",\"cscript\",\"mshta\",\"regsvr32\",\"rundll32\",\"certutil\",\"bitsadmin\")\n| summarize Count = count(), Hosts = dcount(Computer) by Process, CommandLine\n| sort by Count desc\n| take 30\n| project ['Process'] = Process, ['Command Line'] = CommandLine, ['Execution Count'] = Count, ['Hosts Affected'] = Hosts\n",
+              "size": 0,
+              "title": "SI-7 — Suspicious Process Execution Events",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-7️⃣__si_—_system_&_i"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "8️⃣  SC — System & Communications Protection",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 🌐 SC — System & Communications Protection\n> **Controls:** SC-5 (Denial of Service Protection), SC-7 (Boundary Protection), SC-12 (Cryptographic Key Management), SC-28 (Protection of Information at Rest)\n\nEvidence of network boundary monitoring, anomalous communication patterns, and data-in-transit protection events.\n"
+            },
+            "name": "sc-header"
+          },
+          {
+            "type": 3,
+            "name": "sc-network",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CommonSecurityLog\n| where TimeGenerated {TimeRange}\n| where DeviceAction has_any (\"deny\",\"block\",\"drop\",\"reject\")\n| summarize BlockCount = count(), UniqueSourceIPs = dcount(SourceIP) by DeviceVendor, DeviceProduct, DestinationPort\n| sort by BlockCount desc\n| take 30\n| project ['Security Device'] = strcat(DeviceVendor, \" — \", DeviceProduct), ['Dest Port'] = DestinationPort, ['Block Count'] = BlockCount, ['Unique Source IPs'] = UniqueSourceIPs\n",
+              "size": 0,
+              "title": "SC-7 — Network Boundary Events (Firewall / NSG Denies)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "sc-dos",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CommonSecurityLog\n| where TimeGenerated {TimeRange}\n| summarize EventsPerHour = count() by SourceIP, bin(TimeGenerated, 1h)\n| where EventsPerHour > 1000\n| sort by EventsPerHour desc\n| project ['Source IP'] = SourceIP, ['Events/Hour'] = EventsPerHour, ['Hour Window'] = TimeGenerated\n",
+              "size": 0,
+              "title": "SC-5 — Potential DoS / High-Volume Traffic Anomalies",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "sc-data-exfil",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| where AlertType has_any (\"Exfiltration\",\"DataExfil\",\"LargeTransfer\",\"DataTransfer\",\"Exfil\",\"Staging\")\n    or Tactics has \"Exfiltration\"\n| project TimeGenerated, AlertName, AlertSeverity, Description, CompromisedEntity, RemediationSteps\n| sort by TimeGenerated desc\n",
+              "size": 0,
+              "title": "SC-7 / SC-28 — Data Exfiltration Risk Alerts",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-8️⃣__sc_—_system_&_c"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "9️⃣  CA — Continuous Monitoring & Improvement Metrics",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 📈 CA — Continuous Monitoring & Improvement\n> **Controls:** CA-2 (Security Assessments), CA-7 (Continuous Monitoring), CA-9 (Internal System Connections)\n\nTrend analysis showing security posture improvements over time — a key differentiator for annual FedRAMP reviews and ATO renewals.\n"
+            },
+            "name": "ca-header"
+          },
+          {
+            "type": 3,
+            "name": "ca-mttd-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| where Status == \"Closed\"\n| extend MTTD_Hours = datetime_diff('hour', FirstActivityTime, TimeGenerated)\n| summarize AvgMTTD = round(avg(MTTD_Hours), 1) by bin(TimeGenerated, 7d)\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "CA-7 — MTTD Trend Over Time (Detection Improvement)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ca-mttr-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| where Status == \"Closed\"\n| extend MTTR_Hours = datetime_diff('hour', ClosedTime, FirstActivityTime)\n| summarize AvgMTTR = round(avg(MTTR_Hours), 1) by bin(TimeGenerated, 7d)\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "CA-7 — MTTR Trend Over Time (Response Improvement)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ca-incident-trend",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize Incidents = count() by bin(TimeGenerated, 7d)\n| order by TimeGenerated asc\n",
+              "size": 1,
+              "title": "CA-7 — Incident Volume Week-over-Week",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ca-alert-coverage",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| where isnotempty(Tactics)\n| mv-expand todynamic(Tactics)\n| extend Tactic = tostring(Tactics)\n| summarize AlertCount = count(), UniqueRules = dcount(AlertName) by Tactic\n| sort by AlertCount desc\n| project ['MITRE Tactic'] = Tactic, ['Alerts Fired'] = AlertCount, ['Distinct Detection Rules'] = UniqueRules\n",
+              "size": 0,
+              "title": "CA-7 — MITRE ATT&CK Coverage — Tactics Detected This Period",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "ca-open-incidents",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where Status in (\"New\",\"Active\")\n| extend AgeDays = datetime_diff('day', now(), TimeGenerated)\n| extend AgeCategory = case(\n    AgeDays <= 1, \"🟢 < 1 day\",\n    AgeDays <= 7, \"🟡 1–7 days\",\n    AgeDays <= 30, \"🟠 8–30 days\",\n    \"🔴 > 30 days — escalation needed\")\n| summarize Count = count() by AgeCategory, Severity\n| sort by AgeCategory asc\n| project ['Age Category'] = AgeCategory, ['Severity'] = Severity, ['Open Incidents'] = Count\n",
+              "size": 0,
+              "title": "CA-7 — Open Incidents by Age (Backlog Health)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          }
+        ]
+      },
+      "name": "group-9️⃣__ca_—_continuous"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "🔟  Proof of Artifacts — Auditor Export Package",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "\n## 📦 Proof of Artifacts — Auditor Export Package\n> Use this section to generate evidence packages for your **3PAO**, **AO**, or **annual assessment**. Each table below is scoped to the selected time range and can be exported to Excel via the ⬇️ icon on each table header.\n\n> **For your audit package, set the Time Range to your assessment period (e.g., Last 90 days or Last Year) before exporting.**\n\n---\n\n### 📋 Artifact Export Checklist for FedRAMP Auditors\n\n| Artifact | Source Table | Control | Status |\n|----------|-------------|---------|--------|\n| Incident log | SecurityIncident | IR-4, IR-5, IR-6 | Export below ↓ |\n| Alert log | SecurityAlert | SI-4, AU-2 | Export below ↓ |\n| Sign-in audit | SigninLogs | AC-7, IA-2 | Export below ↓ |\n| Privileged access | AuditLogs | AC-6 | Export below ↓ |\n| Azure changes | AzureActivity | CM-3 | Export below ↓ |\n| Log source coverage | union * | AU-12 | Export below ↓ |\n"
+            },
+            "name": "poa-header"
+          },
+          {
+            "type": 3,
+            "name": "poa-incidents",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| project\n    ['Incident #'] = IncidentNumber,\n    ['Created Date'] = TimeGenerated,\n    ['Title'] = Title,\n    ['Severity'] = Severity,\n    ['Status'] = Status,\n    ['Classification'] = Classification,\n    ['Classification Reason'] = ClassificationReason,\n    ['Owner'] = tostring(Owner.assignedTo),\n    ['Tactics'] = AdditionalData,\n    ['First Activity'] = FirstActivityTime,\n    ['Closed Time'] = ClosedTime,\n    ['MTTD Hours'] = datetime_diff('hour', FirstActivityTime, TimeGenerated),\n    ['MTTR Hours'] = datetime_diff('hour', ClosedTime, FirstActivityTime)\n| sort by ['Created Date'] desc\n",
+              "size": 0,
+              "title": "📤 EXPORT — Complete Incident Log (FedRAMP Evidence: IR-4, IR-5, AU-6)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "poa-alerts",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| project\n    ['Alert Time'] = TimeGenerated,\n    ['Alert Name'] = AlertName,\n    ['Alert Type'] = AlertType,\n    ['Severity'] = AlertSeverity,\n    ['Product'] = ProductName,\n    ['Entity'] = CompromisedEntity,\n    ['Tactics'] = Tactics,\n    ['Description'] = Description,\n    ['Status'] = Status,\n    ['Confidence'] = ConfidenceLevel\n| sort by ['Alert Time'] desc\n",
+              "size": 0,
+              "title": "📤 EXPORT — Complete Alert Log (FedRAMP Evidence: SI-4, AU-2, AU-3)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "poa-signins",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SigninLogs\n| where TimeGenerated {TimeRange}\n| where ResultType != \"0\" or AuthenticationRequirement == \"multiFactorAuthentication\"\n| project\n    ['Sign-in Time'] = TimeGenerated,\n    ['User'] = UserPrincipalName,\n    ['App'] = AppDisplayName,\n    ['IP Address'] = IPAddress,\n    ['Location'] = Location,\n    ['Result Code'] = ResultType,\n    ['Result Description'] = ResultDescription,\n    ['MFA Required'] = AuthenticationRequirement,\n    ['Device'] = DeviceDetail,\n    ['Risk Level'] = RiskLevelDuringSignIn\n| sort by ['Sign-in Time'] desc\n| take 5000\n",
+              "size": 0,
+              "title": "📤 EXPORT — Sign-in Audit Log (FedRAMP Evidence: AC-7, IA-2, AU-3)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "poa-privilege",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AuditLogs\n| where TimeGenerated {TimeRange}\n| where Category in (\"RoleManagement\",\"UserManagement\",\"GroupManagement\")\n| extend Actor = tostring(InitiatedBy.user.userPrincipalName)\n| extend Target = tostring(TargetResources[0].userPrincipalName)\n| extend TargetName = tostring(TargetResources[0].displayName)\n| project\n    ['Event Time'] = TimeGenerated,\n    ['Operation'] = OperationName,\n    ['Category'] = Category,\n    ['Performed By'] = Actor,\n    ['Target User'] = Target,\n    ['Target Object'] = TargetName,\n    ['Result'] = Result\n| sort by ['Event Time'] desc\n",
+              "size": 0,
+              "title": "📤 EXPORT — Privileged Access & Role Changes (FedRAMP Evidence: AC-2, AC-6)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 3,
+            "name": "poa-azure-changes",
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureActivity\n| where TimeGenerated {TimeRange}\n| where OperationNameValue has_any (\"write\",\"delete\") and ActivityStatusValue == \"Succeeded\"\n| project\n    ['Change Time'] = TimeGenerated,\n    ['Operation'] = OperationNameValue,\n    ['Resource'] = Resource,\n    ['Resource Group'] = ResourceGroup,\n    ['Subscription'] = SubscriptionId,\n    ['Changed By'] = Caller,\n    ['Result'] = ActivityStatusValue,\n    ['Properties'] = Properties\n| sort by ['Change Time'] desc\n",
+              "size": 0,
+              "title": "📤 EXPORT — Azure Configuration Changes (FedRAMP Evidence: CM-3, CM-8)",
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "showPin": true,
+              "exportToExcelOptions": "liveData"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "\n---\n\n### 🗂️ FedRAMP Control Family Coverage Summary\n\n| Control Family | Controls Addressed by This Workbook | Evidence Sections |\n|---------------|-------------------------------------|-------------------|\n| AU — Audit & Accountability | AU-2, AU-3, AU-6, AU-9, AU-11, AU-12 | Section 2 |\n| AC — Access Control | AC-2, AC-3, AC-6, AC-7, AC-17 | Section 3 |\n| IA — Identification & Auth | IA-2, IA-5, IA-8 | Section 4 |\n| IR — Incident Response | IR-4, IR-5, IR-6, IR-8 | Section 5 |\n| CM — Configuration Mgmt | CM-2, CM-3, CM-6, CM-8 | Section 6 |\n| SI — System Integrity | SI-3, SI-4, SI-7 | Section 7 |\n| SC — Communications Protection | SC-5, SC-7, SC-28 | Section 8 |\n| CA — Security Assessment | CA-2, CA-7, CA-9 | Section 9 |\n\n> 📌 **For 3PAO engagements:** Export each table in Sections 2–8 individually and include in your evidence folder organized by control family. Attach the Continuous Improvement charts (Section 9) as trend evidence for CA-7.\n\n> 📌 **For Annual ATO Renewals:** Set Time Range to \"Last Year\" and export the full Incident Log, Alert Log, and Configuration Change log as your primary ConMon artifacts.\n"
+            },
+            "name": "poa-footer"
+          }
+        ]
+      },
+      "name": "group-🔟__proof_of_artifact"
+    }
+  ],
+  "styleSettings": {
+    "paddingStyle": "wide",
+    "spacingStyle": "wider"
+  },
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
