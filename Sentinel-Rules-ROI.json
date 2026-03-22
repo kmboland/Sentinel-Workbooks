@@ -1,0 +1,835 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# 🗂️ Table → Analytics Rule Coverage & ROI Explorer\n---\n**Select any Sentinel table** to see every analytics rule that queries it — pulled directly from ARM via Azure Resource Graph. No hardcoding, always current.\n\n> **Tab 1 — Table Detail:** Rules, alerts, and incidents for a single selected table.  \n> **Tab 2 — All Tables Coverage:** Macro coverage matrix across all known tables.  \n> **Tab 3 — Cost & ROI:** Ingestion volume, cost per table, and coverage vs. spend matrix.  \n> **Tab 4 — Rule Effectiveness:** Alert → incident conversion rates, noise identification, and rule ROI scoring."
+      },
+      "name": "title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Alert Lookback",
+            "type": 4,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "param-002",
+            "version": "KqlParameterItem/1.0",
+            "name": "SelectedTable",
+            "label": "🗂️ Select Table",
+            "type": 2,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[{\"value\": \"SigninLogs\", \"label\": \"SigninLogs\"}, {\"value\": \"AuditLogs\", \"label\": \"AuditLogs\"}, {\"value\": \"SecurityEvent\", \"label\": \"SecurityEvent\"}, {\"value\": \"WindowsEvent\", \"label\": \"WindowsEvent\"}, {\"value\": \"Syslog\", \"label\": \"Syslog\"}, {\"value\": \"CommonSecurityLog\", \"label\": \"CommonSecurityLog\"}, {\"value\": \"AzureActivity\", \"label\": \"AzureActivity\"}, {\"value\": \"OfficeActivity\", \"label\": \"OfficeActivity\"}, {\"value\": \"AzureDiagnostics\", \"label\": \"AzureDiagnostics\"}, {\"value\": \"DnsEvents\", \"label\": \"DnsEvents\"}, {\"value\": \"SecurityAlert\", \"label\": \"SecurityAlert\"}, {\"value\": \"SecurityIncident\", \"label\": \"SecurityIncident\"}, {\"value\": \"ThreatIntelligenceIndicator\", \"label\": \"ThreatIntelligenceIndicator\"}, {\"value\": \"ThreatIntelIndicators\", \"label\": \"ThreatIntelIndicators\"}, {\"value\": \"DeviceProcessEvents\", \"label\": \"DeviceProcessEvents\"}, {\"value\": \"DeviceNetworkEvents\", \"label\": \"DeviceNetworkEvents\"}, {\"value\": \"DeviceFileEvents\", \"label\": \"DeviceFileEvents\"}, {\"value\": \"DeviceLogonEvents\", \"label\": \"DeviceLogonEvents\"}, {\"value\": \"DeviceRegistryEvents\", \"label\": \"DeviceRegistryEvents\"}, {\"value\": \"DeviceAlertEvents\", \"label\": \"DeviceAlertEvents\"}, {\"value\": \"EmailEvents\", \"label\": \"EmailEvents\"}, {\"value\": \"EmailAttachmentInfo\", \"label\": \"EmailAttachmentInfo\"}, {\"value\": \"IdentityLogonEvents\", \"label\": \"IdentityLogonEvents\"}, {\"value\": \"IdentityQueryEvents\", \"label\": \"IdentityQueryEvents\"}, {\"value\": \"IdentityDirectoryEvents\", \"label\": \"IdentityDirectoryEvents\"}, {\"value\": \"CloudAppEvents\", \"label\": \"CloudAppEvents\"}, {\"value\": \"AADNonInteractiveUserSignInLogs\", \"label\": \"AADNonInteractiveUserSignInLogs\"}, {\"value\": \"AADServicePrincipalSignInLogs\", \"label\": \"AADServicePrincipalSignInLogs\"}, {\"value\": \"AADManagedIdentitySignInLogs\", \"label\": \"AADManagedIdentitySignInLogs\"}, {\"value\": \"BehaviorAnalytics\", \"label\": \"BehaviorAnalytics\"}, {\"value\": \"AWSCloudTrail\", \"label\": \"AWSCloudTrail\"}, {\"value\": \"GCPAuditLogs\", \"label\": \"GCPAuditLogs\"}, {\"value\": \"McasShadowItReporting\", \"label\": \"McasShadowItReporting\"}, {\"value\": \"NetworkAccessTraffic\", \"label\": \"NetworkAccessTraffic\"}]",
+            "value": "IdentityLogonEvents"
+          },
+          {
+            "id": "param-003",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTab",
+            "label": " ",
+            "type": 10,
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[{\"value\": \"detail\", \"label\": \"\\ud83d\\udd0d Table Detail\"}, {\"value\": \"coverage\", \"label\": \"\\ud83d\\udcca All Tables Coverage\"}, {\"value\": \"roi\", \"label\": \"\\ud83d\\udcb0 Cost & ROI\"}, {\"value\": \"effectiveness\", \"label\": \"\\ud83c\\udfaf Rule Effectiveness\"}]",
+            "value": "roi"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## All analytics rules that reference: `{SelectedTable}`\nDiscovered by parsing the KQL `query` property of every `microsoft.securityinsights/alertRules` ARM resource via Azure Resource Graph."
+            },
+            "name": "detail-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend \n    Enabled   = tobool(properties.enabled),\n    QueryText = tostring(properties.query)\n| where isnotempty(QueryText)\n| where QueryText has '{SelectedTable}'\n| summarize Count = count() by Status = iff(Enabled, 'Enabled', 'Disabled')\n",
+              "size": 1,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "visualization": "barchart"
+            },
+            "customWidth": "33",
+            "name": "detail-status-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend \n    Severity  = tostring(properties.severity),\n    QueryText = tostring(properties.query)\n| where isnotempty(QueryText)\n| where QueryText has '{SelectedTable}'\n| summarize Count = count() by Severity\n| extend SortOrder = case(Severity=='High',1,Severity=='Medium',2,Severity=='Low',3,4)\n| sort by SortOrder asc\n",
+              "size": 1,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "visualization": "barchart"
+            },
+            "customWidth": "33",
+            "name": "detail-severity-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend \n    QueryText = tostring(properties.query),\n    Tactics   = tostring(properties.tactics)\n| where isnotempty(QueryText)\n| where QueryText has '{SelectedTable}'\n| where isnotempty(Tactics) and Tactics != '[]'\n| extend TacticArray = parse_json(Tactics)\n| mv-expand Tactic = TacticArray\n| summarize RuleCount = count() by Tactic = tostring(Tactic)\n| sort by RuleCount desc\n",
+              "size": 1,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "visualization": "barchart"
+            },
+            "customWidth": "34",
+            "name": "detail-mitre"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📋 Rules Grid"
+            },
+            "name": "detail-grid-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend \n    RuleName    = tostring(properties.displayName),\n    Enabled     = tobool(properties.enabled),\n    Severity    = tostring(properties.severity),\n    RuleType    = tostring(kind),\n    QueryText   = tostring(properties.query),\n    Tactics     = tostring(properties.tactics),\n    Techniques  = tostring(properties.techniques),\n    QueryPeriod = tostring(properties.queryPeriod),\n    QueryFreq   = tostring(properties.queryFrequency),\n    Description = tostring(properties.description),\n    TemplateId  = tostring(properties.alertRuleTemplateName),\n    LastModified= tostring(properties.lastModifiedUtc)\n| where isnotempty(QueryText)\n| where QueryText matches regex strcat(@'(?i)(^|\\|\\s|,|\\()\\s*', '{SelectedTable}', @'\\s*(\\||\\n|$|,|\\))')\n      or QueryText has '{SelectedTable}'\n| extend EnabledStatus = iff(Enabled, '✅ Enabled', '⛔ Disabled')\n| extend SeverityIcon  = case(\n    Severity == 'High',          '🔴 High',\n    Severity == 'Medium',        '🟠 Medium',\n    Severity == 'Low',           '🟡 Low',\n    Severity == 'Informational', '🔵 Info',\n    Severity\n)\n| extend TacticList = replace_regex(Tactics, @'[\\[\\]\"\"]', '')\n| project\n    ['Rule Name']    = RuleName,\n    ['Status']       = EnabledStatus,\n    ['Severity']     = SeverityIcon,\n    ['Type']         = RuleType,\n    ['Tactics']      = TacticList,\n    ['Query Period'] = QueryPeriod,\n    ['Frequency']    = QueryFreq,\n    ['Description']  = Description,\n    ['Query']        = QueryText,\n    ['Template ID']  = TemplateId,\n    ['Last Modified']= LastModified\n| sort by ['Status'] asc, ['Severity'] asc\n",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Status",
+                    "sortOrder": 1
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Rule Name",
+                    "label": "Rule Name"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "Severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "Type",
+                    "label": "Rule Type"
+                  },
+                  {
+                    "columnId": "Tactics",
+                    "label": "MITRE Tactics"
+                  },
+                  {
+                    "columnId": "Query Period",
+                    "label": "Lookback"
+                  },
+                  {
+                    "columnId": "Frequency",
+                    "label": "Run Freq"
+                  },
+                  {
+                    "columnId": "Description",
+                    "label": "Description"
+                  },
+                  {
+                    "columnId": "Query",
+                    "label": "KQL Query"
+                  },
+                  {
+                    "columnId": "Last Modified",
+                    "label": "Last Modified"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Status",
+                  "sortOrder": 1
+                }
+              ]
+            },
+            "name": "detail-rules-grid"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🚨 Alert Activity — Rules on `{SelectedTable}`\nActual alert history for rules that reference this table. Inner join means only rules that have both a definition *and* fired alerts in the lookback window will appear."
+            },
+            "name": "detail-alert-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let RulesForTable = arg(\"\").Resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend \n    RuleName  = tostring(properties.displayName),\n    QueryText = tostring(properties.query)\n| where isnotempty(QueryText)\n| where QueryText has '{SelectedTable}'\n| project RuleName;\nSecurityAlert\n| where TimeGenerated {TimeRange}\n| join hint.remote=right kind=inner (RulesForTable) on $left.AlertName == $right.RuleName\n| summarize AlertCount = count() by bin(TimeGenerated, 1d), AlertName, AlertSeverity\n| project TimeGenerated, AlertName, AlertSeverity, AlertCount\n",
+              "size": 1,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "name": "detail-alert-trend"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🎫 Incident Conversion — Rules on `{SelectedTable}`\nFor each rule referencing this table, shows how many alerts escalated to incidents. **Conversion Rate** = incidents ÷ alerts × 100. A low rate may indicate a noisy rule with high false-positive volume."
+            },
+            "name": "detail-incident-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let RulesForTable = arg(\"\").Resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend\n    RuleName  = tostring(properties.displayName),\n    QueryText = tostring(properties.query)\n| where isnotempty(QueryText)\n| where QueryText has '{SelectedTable}'\n| project RuleName;\nlet IncidentAlerts = SecurityIncident\n| where TimeGenerated {TimeRange}\n| mv-expand AlertIds = parse_json(AlertIds)\n| extend AlertId = tostring(AlertIds)\n| project AlertId, IncidentNumber, IncidentSeverity = Severity, IncidentStatus = Status;\nlet AlertBase = SecurityAlert\n| where TimeGenerated {TimeRange}\n| join hint.remote=right kind=inner (RulesForTable) on $left.AlertName == $right.RuleName\n| project SystemAlertId, AlertName, AlertSeverity;\nAlertBase\n| join kind=leftouter (IncidentAlerts) on $left.SystemAlertId == $right.AlertId\n| summarize\n    TotalAlerts   = count(),\n    IncidentCount = countif(isnotempty(IncidentNumber))\n  by AlertName, AlertSeverity\n| extend ConversionRate = round(todouble(IncidentCount) / todouble(TotalAlerts) * 100, 1)\n| extend EffectivenessIcon = case(\n    TotalAlerts == 0,        '⚪ No Alerts',\n    ConversionRate == 0,     '🔴 No Conversion',\n    ConversionRate < 10,     '🟠 Low (<10%)',\n    ConversionRate < 50,     '🟡 Moderate',\n    '✅ High (50%+)'\n)\n| project\n    ['Rule Name']       = AlertName,\n    ['Severity']        = AlertSeverity,\n    ['Total Alerts']    = TotalAlerts,\n    ['Incidents Created']= IncidentCount,\n    ['Conversion %']    = ConversionRate,\n    ['Effectiveness']   = EffectivenessIcon\n| sort by ['Total Alerts'] desc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "Rule Name",
+                    "label": "Rule Name"
+                  },
+                  {
+                    "columnId": "Severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "Total Alerts",
+                    "label": "Total Alerts"
+                  },
+                  {
+                    "columnId": "Incidents Created",
+                    "label": "Incidents"
+                  },
+                  {
+                    "columnId": "Conversion %",
+                    "label": "Conversion Rate %"
+                  },
+                  {
+                    "columnId": "Effectiveness",
+                    "label": "Signal Quality"
+                  }
+                ]
+              }
+            },
+            "name": "detail-incident-conversion"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "detail"
+      },
+      "name": "group-detail"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📊 All Tables — Analytics Rule Coverage Summary\nShows every known Sentinel security table and how many analytics rules reference it. Rules discovered via Azure Resource Graph — always current, no manual maintenance required.\n\n> Tables with **⭕ No Rules** are ingesting data with zero detection coverage — highest priority ROI gaps to address."
+            },
+            "name": "cov-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let KnownTables = datatable(TableName:string)[\n    'SecurityEvent','WindowsEvent','Syslog','CommonSecurityLog',\n    'AzureActivity','SigninLogs','AuditLogs',\n    'AADNonInteractiveUserSignInLogs','AADServicePrincipalSignInLogs',\n    'AADManagedIdentitySignInLogs','OfficeActivity','AzureDiagnostics',\n    'SecurityAlert','SecurityIncident','DnsEvents','W3CIISLog',\n    'ThreatIntelligenceIndicator','ThreatIntelIndicators',\n    'DeviceProcessEvents','DeviceNetworkEvents','DeviceFileEvents',\n    'DeviceLogonEvents','DeviceRegistryEvents','DeviceAlertEvents',\n    'EmailEvents','EmailAttachmentInfo','EmailUrlInfo',\n    'IdentityLogonEvents','IdentityQueryEvents','IdentityDirectoryEvents',\n    'CloudAppEvents','AWSCloudTrail','GCPAuditLogs','McasShadowItReporting',\n    'BehaviorAnalytics','UserAccessAnalytics','NetworkAccessTraffic'\n];\nlet AllRules = resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend\n    QueryText = tostring(properties.query),\n    Enabled   = tobool(properties.enabled),\n    Severity  = tostring(properties.severity)\n| where isnotempty(QueryText);\nlet RuleCoverage = AllRules\n| extend MatchesTable = case(\n    QueryText has 'SecurityEvent',                   'SecurityEvent',\n    QueryText has 'SigninLogs',                      'SigninLogs',\n    QueryText has 'AuditLogs',                       'AuditLogs',\n    QueryText has 'Syslog',                          'Syslog',\n    QueryText has 'CommonSecurityLog',               'CommonSecurityLog',\n    QueryText has 'AzureActivity',                   'AzureActivity',\n    QueryText has 'OfficeActivity',                  'OfficeActivity',\n    QueryText has 'DeviceProcessEvents',             'DeviceProcessEvents',\n    QueryText has 'DeviceNetworkEvents',             'DeviceNetworkEvents',\n    QueryText has 'DeviceLogonEvents',               'DeviceLogonEvents',\n    QueryText has 'DeviceFileEvents',                'DeviceFileEvents',\n    QueryText has 'DeviceAlertEvents',               'DeviceAlertEvents',\n    QueryText has 'IdentityLogonEvents',             'IdentityLogonEvents',\n    QueryText has 'CloudAppEvents',                  'CloudAppEvents',\n    QueryText has 'EmailEvents',                     'EmailEvents',\n    QueryText has 'ThreatIntelligenceIndicator',     'ThreatIntelligenceIndicator',\n    QueryText has 'ThreatIntelIndicators',           'ThreatIntelIndicators',\n    QueryText has 'SecurityAlert',                   'SecurityAlert',\n    QueryText has 'DnsEvents',                       'DnsEvents',\n    QueryText has 'BehaviorAnalytics',               'BehaviorAnalytics',\n    QueryText has 'AADNonInteractiveUserSignInLogs', 'AADNonInteractiveUserSignInLogs',\n    QueryText has 'AADServicePrincipalSignInLogs',   'AADServicePrincipalSignInLogs',\n    QueryText has 'WindowsEvent',                    'WindowsEvent',\n    QueryText has 'AWSCloudTrail',                   'AWSCloudTrail',\n    ''\n)\n| where isnotempty(MatchesTable)\n| summarize\n    TotalRules   = count(),\n    EnabledRules = countif(Enabled == true),\n    HighSeverity = countif(Severity == 'High'),\n    MedSeverity  = countif(Severity == 'Medium')\n  by MatchesTable;\nKnownTables\n| join kind=leftouter (RuleCoverage) on $left.TableName == $right.MatchesTable\n| extend TotalRules   = coalesce(TotalRules, 0)\n| extend EnabledRules = coalesce(EnabledRules, 0)\n| extend HighSeverity = coalesce(HighSeverity, 0)\n| extend MedSeverity  = coalesce(MedSeverity, 0)\n| extend CoverageStatus = case(\n    TotalRules == 0,                             '⭕ No Rules',\n    EnabledRules == 0,                           '🔴 Rules Exist but All Disabled',\n    EnabledRules > 0 and HighSeverity > 0,       '✅ Good Coverage',\n    EnabledRules > 0,                            '🟡 Partial Coverage',\n    '⭕ Unknown'\n)\n| project\n    ['Table']         = TableName,\n    ['Coverage']      = CoverageStatus,\n    ['Total Rules']   = TotalRules,\n    ['Enabled Rules'] = EnabledRules,\n    ['High Severity'] = HighSeverity,\n    ['Med Severity']  = MedSeverity\n| sort by ['Total Rules'] desc\n",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Total Rules",
+                    "sortOrder": 2
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Table",
+                    "label": "Table Name"
+                  },
+                  {
+                    "columnId": "Coverage",
+                    "label": "Coverage Status"
+                  },
+                  {
+                    "columnId": "Total Rules",
+                    "label": "Total Rules"
+                  },
+                  {
+                    "columnId": "Enabled Rules",
+                    "label": "Enabled Rules"
+                  },
+                  {
+                    "columnId": "High Severity",
+                    "label": "High Sev Rules"
+                  },
+                  {
+                    "columnId": "Med Severity",
+                    "label": "Medium Sev Rules"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Total Rules",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "cov-all-grid"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 💡 Using This View\n\n| Status | Meaning | Recommended Action |\n|---|---|---|\n| ✅ Good Coverage | Table has enabled rules including High severity | Monitor for rule quality |\n| 🟡 Partial Coverage | Rules exist but none are High severity | Add high-fidelity detection rules |\n| 🔴 All Disabled | Rules exist but are all disabled | Investigate why — re-enable or remove |\n| ⭕ No Rules | No analytics rules reference this table | Install Content Hub solution or write custom rules |\n\n**To drill into any table:** Switch to the **🔍 Table Detail** tab and select the table from the dropdown."
+            },
+            "name": "cov-guide"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "coverage"
+      },
+      "name": "group-coverage"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 💰 Ingestion Cost & ROI\nMaps log ingestion volume and billable data spend against analytics rule coverage. Identifies tables with high ingestion cost and no detection rules — your highest-priority ROI gaps.\n\n> **Source:** `Usage` table (billable events only). Costs shown as GB ingested — multiply by your per-GB price to calculate actual spend.  \n> **ROI Classification:** High Cost = top quartile GB/day for this workspace."
+            },
+            "name": "roi-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Usage\n| where TimeGenerated {TimeRange}\n| where IsBillable == true\n| summarize TotalGB = round(sum(Quantity) / 1024, 2) by DataType\n| sort by TotalGB desc\n| take 20\n",
+              "size": 1,
+              "title": "Top 20 Tables by Ingestion Volume (GB)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "DataType",
+                "yAxis": [
+                  "TotalGB"
+                ],
+                "yAxisLabel": "GB Ingested"
+              }
+            },
+            "customWidth": "50",
+            "name": "roi-ingestion-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Usage\n| where TimeGenerated {TimeRange}\n| where IsBillable == true\n| summarize DailyGB = round(sum(Quantity) / 1024 / 30, 3) by DataType\n| sort by DailyGB desc\n| take 20\n",
+              "size": 1,
+              "title": "Avg Daily Ingestion Rate — Top 20 Tables",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "DataType",
+                "yAxis": [
+                  "DailyGB"
+                ],
+                "yAxisLabel": "GB / Day"
+              }
+            },
+            "customWidth": "50",
+            "name": "roi-daily-rate-chart"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📊 Table Health & Ingestion Status\nLast ingest time, 30-day volume, and average daily rate for every billable table. Tables not seen in 24 hours may indicate a connector issue."
+            },
+            "name": "roi-health-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Usage\n| where TimeGenerated {TimeRange}\n| where IsBillable == true\n| summarize\n    LastIngest   = max(TimeGenerated),\n    TotalGB_30d  = round(sum(Quantity) / 1024, 3),\n    AvgDailyGB   = round(sum(Quantity) / 1024 / 30, 4),\n    EventCount   = sum(Quantity * 1000000 / 1024 / 1024)\n  by Table = DataType\n| extend HealthStatus = case(\n    LastIngest > ago(1h),  '🟢 Active',\n    LastIngest > ago(1d),  '🟢 Active',\n    LastIngest > ago(3d),  '🟡 Stale (1-3d)',\n    LastIngest > ago(7d),  '🟠 Warning (3-7d)',\n    '🔴 No Recent Data (7d+)'\n)\n| project\n    ['Table']        = Table,\n    ['Health']       = HealthStatus,\n    ['Last Ingest']  = LastIngest,\n    ['Total GB (30d)']= TotalGB_30d,\n    ['Avg GB/Day']   = AvgDailyGB\n| sort by ['Total GB (30d)'] desc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Total GB (30d)",
+                    "sortOrder": 2
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Table",
+                    "label": "Table"
+                  },
+                  {
+                    "columnId": "Health",
+                    "label": "Ingest Health"
+                  },
+                  {
+                    "columnId": "Last Ingest",
+                    "label": "Last Seen"
+                  },
+                  {
+                    "columnId": "Total GB (30d)",
+                    "label": "Total GB (30d)"
+                  },
+                  {
+                    "columnId": "Avg GB/Day",
+                    "label": "Avg GB/Day"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Total GB (30d)",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "roi-health-grid"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🎯 Coverage vs. Cost ROI Matrix\nJoins ingestion volume from `Usage` with rule coverage from Azure Resource Graph. Highlights tables where you are spending the most on ingestion with the least detection coverage — the highest-priority gaps for ROI improvement.\n\n| ROI Status | Meaning | Priority |\n|---|---|---|\n| 🚨 High Cost, No Coverage | Top-quartile ingestion spend, zero detection rules | **Urgent** |\n| ⚠️ High Cost, Partial Coverage | High spend, rules exist but none High severity | High |\n| ✅ High Cost, Good Coverage | High spend, well-covered with enabled High severity rules | Maintain |\n| 🟡 Low Cost, No Coverage | Low ingestion, no rules — may not justify investment | Low |\n| ✅ Covered | Has enabled rules | Monitor |"
+            },
+            "name": "roi-matrix-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let RuleCoverage = arg(\"\").Resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend\n    QueryText    = tostring(properties.query),\n    Enabled      = tobool(properties.enabled),\n    Severity     = tostring(properties.severity)\n| where isnotempty(QueryText)\n| extend MatchesTable = case(\n    QueryText has 'SecurityEvent',                   'SecurityEvent',\n    QueryText has 'SigninLogs',                      'SigninLogs',\n    QueryText has 'AuditLogs',                       'AuditLogs',\n    QueryText has 'Syslog',                          'Syslog',\n    QueryText has 'CommonSecurityLog',               'CommonSecurityLog',\n    QueryText has 'AzureActivity',                   'AzureActivity',\n    QueryText has 'OfficeActivity',                  'OfficeActivity',\n    QueryText has 'DeviceProcessEvents',             'DeviceProcessEvents',\n    QueryText has 'DeviceNetworkEvents',             'DeviceNetworkEvents',\n    QueryText has 'DeviceLogonEvents',               'DeviceLogonEvents',\n    QueryText has 'DeviceFileEvents',                'DeviceFileEvents',\n    QueryText has 'DeviceAlertEvents',               'DeviceAlertEvents',\n    QueryText has 'IdentityLogonEvents',             'IdentityLogonEvents',\n    QueryText has 'CloudAppEvents',                  'CloudAppEvents',\n    QueryText has 'EmailEvents',                     'EmailEvents',\n    QueryText has 'ThreatIntelligenceIndicator',     'ThreatIntelligenceIndicator',\n    QueryText has 'ThreatIntelIndicators',           'ThreatIntelIndicators',\n    QueryText has 'SecurityAlert',                   'SecurityAlert',\n    QueryText has 'DnsEvents',                       'DnsEvents',\n    QueryText has 'BehaviorAnalytics',               'BehaviorAnalytics',\n    QueryText has 'AADNonInteractiveUserSignInLogs', 'AADNonInteractiveUserSignInLogs',\n    QueryText has 'AADServicePrincipalSignInLogs',   'AADServicePrincipalSignInLogs',\n    QueryText has 'WindowsEvent',                    'WindowsEvent',\n    QueryText has 'AWSCloudTrail',                   'AWSCloudTrail',\n    ''\n)\n| where isnotempty(MatchesTable)\n| summarize\n    TotalRules   = count(),\n    EnabledRules = countif(Enabled == true),\n    HighRules    = countif(Severity == 'High')\n  by MatchesTable;\nlet IngestionData = Usage\n| where TimeGenerated {TimeRange}\n| where IsBillable == true\n| summarize\n    TotalGB   = round(sum(Quantity) / 1024, 2),\n    AvgDailyGB= round(sum(Quantity) / 1024 / 30, 3)\n  by Table = DataType;\nlet AvgGB = toscalar(\n    Usage\n    | where TimeGenerated {TimeRange}\n    | where IsBillable == true\n    | summarize TotalGB = sum(Quantity) / 1024 by Table = DataType\n    | summarize avg(TotalGB)\n);\nIngestionData\n| join hint.remote=right kind=leftouter (RuleCoverage) on $left.Table == $right.MatchesTable\n| extend TotalRules   = coalesce(TotalRules, 0)\n| extend EnabledRules = coalesce(EnabledRules, 0)\n| extend HighRules    = coalesce(HighRules, 0)\n| extend IsHighCost   = TotalGB > AvgGB\n| extend ROIStatus = case(\n    IsHighCost and EnabledRules == 0,                '🚨 High Cost, No Coverage',\n    IsHighCost and EnabledRules > 0 and HighRules == 0, '⚠️ High Cost, Partial Coverage',\n    IsHighCost and HighRules > 0,                    '✅ High Cost, Good Coverage',\n    not(IsHighCost) and EnabledRules == 0,           '🟡 Low Cost, No Coverage',\n    '✅ Covered'\n)\n| project\n    ['Table']          = Table,\n    ['ROI Status']     = ROIStatus,\n    ['Total GB (30d)'] = TotalGB,\n    ['Avg GB/Day']     = AvgDailyGB,\n    ['Total Rules']    = TotalRules,\n    ['Enabled Rules']  = EnabledRules,\n    ['High Sev Rules'] = HighRules\n| sort by ['Total GB (30d)'] desc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Total GB (30d)",
+                    "sortOrder": 2
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Table",
+                    "label": "Table"
+                  },
+                  {
+                    "columnId": "ROI Status",
+                    "label": "ROI Status"
+                  },
+                  {
+                    "columnId": "Total GB (30d)",
+                    "label": "Total GB (30d)"
+                  },
+                  {
+                    "columnId": "Avg GB/Day",
+                    "label": "Avg GB/Day"
+                  },
+                  {
+                    "columnId": "Total Rules",
+                    "label": "Total Rules"
+                  },
+                  {
+                    "columnId": "Enabled Rules",
+                    "label": "Enabled Rules"
+                  },
+                  {
+                    "columnId": "High Sev Rules",
+                    "label": "High Sev Rules"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Total GB (30d)",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "roi-matrix-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Usage\n| where TimeGenerated {TimeRange}\n| where IsBillable == true\n| summarize DailyGB = round(sum(Quantity) / 1024 / 30, 3) by bin(TimeGenerated, 1d), DataType\n| where DailyGB > 0\n| top 8 by DailyGB\n",
+              "size": 1,
+              "title": "Ingestion Trend — Top 8 Tables by Volume",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "name": "roi-ingestion-trend"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "roi"
+      },
+      "name": "group-roi"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🎯 Rule Effectiveness & Signal Quality\nMeasures how well each analytics rule converts alerts into actionable incidents. Rules with high alert volume but zero incident conversion are candidates for tuning, suppression, or retirement.\n\n> **Conversion Rate** = Incidents Created ÷ Total Alerts × 100  \n> **Data sources:** `SecurityAlert` + `SecurityIncident` joined on Alert ID."
+            },
+            "name": "eff-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| summarize TotalAlerts = count() by AlertSeverity\n| extend SortOrder = case(AlertSeverity=='High',1,AlertSeverity=='Medium',2,AlertSeverity=='Low',3,4)\n| sort by SortOrder asc\n",
+              "size": 1,
+              "title": "Alert Volume by Severity",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "25",
+            "name": "eff-sev-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| summarize IncidentCount = count() by Severity\n| extend SortOrder = case(Severity=='High',1,Severity=='Medium',2,Severity=='Low',3,4)\n| sort by SortOrder asc\n",
+              "size": 1,
+              "title": "Incident Volume by Severity",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "customWidth": "25",
+            "name": "eff-incident-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "SecurityAlert\n| where TimeGenerated {TimeRange}\n| summarize AlertCount = count() by bin(TimeGenerated, 1d), AlertSeverity\n| project TimeGenerated, AlertSeverity, AlertCount\n",
+              "size": 1,
+              "title": "Daily Alert Volume Trend",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "eff-alert-trend"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📋 Full Rule Effectiveness Scorecard\nEvery rule that fired at least one alert in the lookback window, ranked by total alerts. Use **Conversion %** and **Signal Quality** to identify tuning candidates."
+            },
+            "name": "eff-scorecard-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let IncidentAlerts = SecurityIncident\n| where TimeGenerated {TimeRange}\n| mv-expand AlertIds = parse_json(AlertIds)\n| extend AlertId = tostring(AlertIds)\n| project AlertId, IncidentNumber, IncidentStatus = Status, IncidentClassification = Classification;\nSecurityAlert\n| where TimeGenerated {TimeRange}\n| project SystemAlertId, AlertName, AlertSeverity, TimeGenerated, ProductName\n| join kind=leftouter (IncidentAlerts) on $left.SystemAlertId == $right.AlertId\n| summarize\n    TotalAlerts       = count(),\n    IncidentCount     = countif(isnotempty(IncidentNumber)),\n    TruePositives     = countif(IncidentClassification == 'TruePositive'),\n    FalsePositives    = countif(IncidentClassification == 'FalsePositive'),\n    Benign            = countif(IncidentClassification == 'BenignPositive'),\n    FirstAlert        = min(TimeGenerated),\n    LastAlert         = max(TimeGenerated)\n  by AlertName, AlertSeverity\n| extend ConversionRate  = round(todouble(IncidentCount) / todouble(TotalAlerts) * 100, 1)\n| extend FPRate          = round(todouble(FalsePositives) / iff(IncidentCount > 0, todouble(IncidentCount), 1.0) * 100, 1)\n| extend SignalQuality = case(\n    TotalAlerts == 0,                 '⚪ No Alerts',\n    ConversionRate == 0,              '🔴 No Conversion — Review',\n    FPRate > 50,                      '🟠 High False Positive Rate',\n    ConversionRate < 10,              '🟠 Low Conversion (<10%)',\n    ConversionRate < 50,              '🟡 Moderate Signal',\n    TruePositives > 0,                '✅ Confirmed True Positives',\n    '✅ Good Signal'\n)\n| project\n    ['Rule Name']      = AlertName,\n    ['Severity']       = AlertSeverity,\n    ['Total Alerts']   = TotalAlerts,\n    ['Incidents']      = IncidentCount,\n    ['True Positives'] = TruePositives,\n    ['False Positives']= FalsePositives,\n    ['Benign']         = Benign,\n    ['Conversion %']   = ConversionRate,\n    ['FP Rate %']      = FPRate,\n    ['Signal Quality'] = SignalQuality,\n    ['First Alert']    = FirstAlert,\n    ['Last Alert']     = LastAlert\n| sort by ['Total Alerts'] desc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Total Alerts",
+                    "sortOrder": 2
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Rule Name",
+                    "label": "Rule Name"
+                  },
+                  {
+                    "columnId": "Severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "Total Alerts",
+                    "label": "Total Alerts"
+                  },
+                  {
+                    "columnId": "Incidents",
+                    "label": "Incidents"
+                  },
+                  {
+                    "columnId": "True Positives",
+                    "label": "True Positives"
+                  },
+                  {
+                    "columnId": "False Positives",
+                    "label": "False Positives"
+                  },
+                  {
+                    "columnId": "Benign",
+                    "label": "Benign"
+                  },
+                  {
+                    "columnId": "Conversion %",
+                    "label": "Conversion %"
+                  },
+                  {
+                    "columnId": "FP Rate %",
+                    "label": "FP Rate %"
+                  },
+                  {
+                    "columnId": "Signal Quality",
+                    "label": "Signal Quality"
+                  },
+                  {
+                    "columnId": "First Alert",
+                    "label": "First Alert"
+                  },
+                  {
+                    "columnId": "Last Alert",
+                    "label": "Last Alert"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Total Alerts",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "eff-scorecard-grid"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🔇 Noise Candidates — High Alert Volume, Zero Incident Conversion\nRules that generated 5 or more alerts but **never** produced an incident. These are your highest-priority tuning targets — they consume analyst attention without producing actionable output."
+            },
+            "name": "eff-noise-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let IncidentAlerts = SecurityIncident\n| where TimeGenerated {TimeRange}\n| mv-expand AlertIds = parse_json(AlertIds)\n| extend AlertId = tostring(AlertIds)\n| project AlertId, IncidentNumber;\nSecurityAlert\n| where TimeGenerated {TimeRange}\n| project SystemAlertId, AlertName, AlertSeverity, TimeGenerated\n| join kind=leftouter (IncidentAlerts) on $left.SystemAlertId == $right.AlertId\n| summarize\n    TotalAlerts   = count(),\n    IncidentCount = countif(isnotempty(IncidentNumber)),\n    FirstAlert    = min(TimeGenerated),\n    LastAlert     = max(TimeGenerated)\n  by AlertName, AlertSeverity\n| where TotalAlerts >= 5 and IncidentCount == 0\n| extend DaysActive = datetime_diff('day', LastAlert, FirstAlert)\n| project\n    ['Rule Name']    = AlertName,\n    ['Severity']     = AlertSeverity,\n    ['Total Alerts'] = TotalAlerts,\n    ['Days Active']  = DaysActive,\n    ['First Alert']  = FirstAlert,\n    ['Last Alert']   = LastAlert,\n    ['Recommendation'] = '🔇 Tune, suppress, or retire'\n| sort by ['Total Alerts'] desc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Total Alerts",
+                    "sortOrder": 2
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Rule Name",
+                    "label": "Rule Name"
+                  },
+                  {
+                    "columnId": "Severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "Total Alerts",
+                    "label": "Total Alerts"
+                  },
+                  {
+                    "columnId": "Days Active",
+                    "label": "Days Active"
+                  },
+                  {
+                    "columnId": "First Alert",
+                    "label": "First Alert"
+                  },
+                  {
+                    "columnId": "Last Alert",
+                    "label": "Last Alert"
+                  },
+                  {
+                    "columnId": "Recommendation",
+                    "label": "Action"
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Total Alerts",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "eff-noise-grid"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 😶 Silent Rules — Enabled but No Alerts in Lookback Window\nRules that are enabled in ARM but have not fired a single alert in the selected time range. May indicate broken data pipeline, over-tuned threshold, or a rule that simply hasn't seen matching conditions."
+            },
+            "name": "eff-silent-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let FiringRules = SecurityAlert\n| where TimeGenerated {TimeRange}\n| summarize by AlertName;\narg(\"\").Resources\n| where type == \"microsoft.securityinsights/alertrules\"\n| extend\n    RuleName  = tostring(properties.displayName),\n    Enabled   = tobool(properties.enabled),\n    Severity  = tostring(properties.severity),\n    RuleType  = tostring(kind),\n    Tactics   = replace_regex(tostring(properties.tactics), @'[\\[\\]\"\"]', ''),\n    QueryPeriod = tostring(properties.queryPeriod),\n    QueryFreq   = tostring(properties.queryFrequency),\n    LastModified= tostring(properties.lastModifiedUtc)\n| where Enabled == true\n| join hint.remote=left kind=leftanti (FiringRules) on $left.RuleName == $right.AlertName\n| extend SeverityIcon = case(\n    Severity == 'High',          '🔴 High',\n    Severity == 'Medium',        '🟠 Medium',\n    Severity == 'Low',           '🟡 Low',\n    Severity == 'Informational', '🔵 Info',\n    Severity\n)\n| project\n    ['Rule Name']    = RuleName,\n    ['Severity']     = SeverityIcon,\n    ['Type']         = RuleType,\n    ['Tactics']      = Tactics,\n    ['Lookback']     = QueryPeriod,\n    ['Run Freq']     = QueryFreq,\n    ['Last Modified']= LastModified,\n    ['Status']       = '😶 Enabled — No Alerts in Window'\n| sort by ['Severity'] asc\n",
+              "size": 0,
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "Rule Name",
+                    "label": "Rule Name"
+                  },
+                  {
+                    "columnId": "Severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "Type",
+                    "label": "Rule Type"
+                  },
+                  {
+                    "columnId": "Tactics",
+                    "label": "MITRE Tactics"
+                  },
+                  {
+                    "columnId": "Lookback",
+                    "label": "Lookback Window"
+                  },
+                  {
+                    "columnId": "Run Freq",
+                    "label": "Run Frequency"
+                  },
+                  {
+                    "columnId": "Last Modified",
+                    "label": "Last Modified"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  }
+                ]
+              }
+            },
+            "name": "eff-silent-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "effectiveness"
+      },
+      "name": "group-effectiveness"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/9073fd76-8e78-4769-ac24-6196ec446f51/resourcegroups/rg-sentineldemo/providers/microsoft.operationalinsights/workspaces/sentineldemo-1"
+  ],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
